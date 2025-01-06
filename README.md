@@ -21,6 +21,7 @@ The ASL dataset is sourced from [Kaggle's ASL Alphabet Dataset](https://www.kagg
 
 ```bash
 pip install -r requirements.txt
+```
 
 ---
 
