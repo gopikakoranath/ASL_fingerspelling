@@ -16,6 +16,8 @@ asl_alphabet =asl_alphabet+['del','nothing','<space>']
 
 # Preprocess the frame for the model
 def preprocess_frame(frame, target_size=(128, 128)):
+    input_frame = cv2.flip(frame, 1)  # Flip horizontally for a mirror-like view
+    roi = input_frame[100:600, 500:1000]  # Crop the region of interest
     frame_resized = cv2.resize(frame, target_size)
     frame_normalized = frame_resized / 255.0  # Normalize the image
     return np.expand_dims(frame_normalized, axis=0).astype(np.float32)  # Ensure float32
@@ -27,22 +29,28 @@ while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
     if not ret:
+        print("Failed to grab frame")
         break
 
     # Preprocess the frame and set input tensor
     input_data = preprocess_frame(frame)
-    interpreter.set_tensor(input_details[0]['index'], input_data)
+    
+    
+    with tf.device('/GPU:0'):
+        interpreter.set_tensor(input_details[0]['index'], input_data)
 
-    # Run inference
-    interpreter.invoke()
+        # Run inference
+        interpreter.invoke()
 
-    # Get the output tensor and make a prediction
-    output_data = interpreter.get_tensor(output_details[0]['index'])
+        # Get the output tensor and make a prediction
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+    
     predicted_class = asl_alphabet[np.argmax(output_data)]
 
     # Display the predicted class in red letters on the top-left of the frame
     cv2.putText(frame, f"Predicted Class: {predicted_class}", (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.rectangle(frame, (500, 100), (1000, 600), (255, 0, 0), 2)  # Draw ROI rectangle
 
     # Show the frame with the prediction
     cv2.imshow('ASL Recognition', frame)
